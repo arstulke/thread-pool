@@ -3,8 +3,6 @@ import { BlockingQueue } from "./util/BlockingQueue.ts";
 import { InternalWorkerThread } from "./InternalWorkerThread.ts";
 import { raceX } from "./util/PromiseUtil.ts";
 
-export type TypedWorkerPool<T> = T & IWorkerPool;
-
 interface IWorkerPool {
   scaleTo(targetSize: number): Promise<this>;
   run<In, Out>(taskName: string, input: In): Promise<Out>;

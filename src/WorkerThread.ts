@@ -2,8 +2,6 @@ import { InternalWorkerThread } from "./InternalWorkerThread.ts";
 import { BlockingQueue } from "./util/BlockingQueue.ts";
 import { Task } from "./util/Task.ts";
 
-export type TypedWorkerThread<T> = T & IWorkerThread;
-
 interface IWorkerThread {
   run<In, Out>(taskName: string, input: In): Promise<Out>;
   started(): Promise<this>;
