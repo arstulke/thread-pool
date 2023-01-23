@@ -22,11 +22,11 @@ async function simulateWork(taskInput: TaskInput): Promise<TaskOutput> {
     .then(() => log("worker: after timeout"));
 
   const start = new Date();
-  log("worker: before wait");
+  log("worker: before busy-waiting");
 
   waitBusy(waitTime); // simulating blocking task for 200ms
 
-  log("worker: after wait");
+  log("worker: after busy-waiting");
   const end = new Date();
 
   return {

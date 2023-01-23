@@ -1,11 +1,10 @@
-import { createWorkerThread } from "../../mod.ts";
+import { WorkerThread } from "../../mod.ts";
 import { log, sleep } from "../utils.ts";
 
-const thread = await createWorkerThread(
-  new URL("./worker.ts", import.meta.url),
-);
+const thread = await new WorkerThread(new URL("./worker.ts", import.meta.url))
+  .started();
 
-const taskPromise = thread.simulateWork({
+const taskPromise = thread.run("simulateWork", {
   id: 0,
   arrivalTime: new Date().toISOString(),
 });

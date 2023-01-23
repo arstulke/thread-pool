@@ -5,21 +5,18 @@ import { InternalWorkerThread } from "./InternalWorkerThread";
 export type TypedWorkerPool<T> = T & IWorkerPool;
 
 interface IWorkerPool {
-  scaleTo(targetSize: number): Promise<void>;
+  scaleTo(targetSize: number): Promise<this>;
   run<In, Out>(taskName: string, input: In): Promise<Out>;
-  started(): Promise<void>;
-  completed(): Promise<void>;
+  started(): Promise<this>;
+  completed(): Promise<this>;
   terminate(gracefully?: boolean): Promise<void>;
-  availableTaskNames: string[];
 }
 
-class WorkerPool implements IWorkerPool {
+export class WorkerPool implements IWorkerPool {
   private readonly workerThreads: InternalWorkerThread[] = [];
   private readonly taskQueue = new BlockingQueue<Task<any, any>>();
-  availableTaskNames: string[] = [];
 
   constructor(private readonly workerScriptURL: URL) {
-    // TODO implement availableTaskNames = ...
   }
 
   async scaleTo(targetSize: number): Promise<void> {
@@ -72,20 +69,4 @@ class WorkerPool implements IWorkerPool {
       );
     await Promise.all(workerThreadPromises);
   }
-}
-
-export async function createWorkerPool<T>(
-  workerScriptURL: URL,
-): Promise<TypedWorkerPool<T>> {
-  const workerPool = new WorkerPool(workerScriptURL);
-  await workerPool.started();
-
-  // assign functions for available tasks
-  const unknownWorkerPool = workerPool as any;
-  for (const taskName of workerPool.availableTaskNames) {
-    unknownWorkerPool[taskName] = (input: any) =>
-      workerPool.run(taskName, input);
-  }
-
-  return unknownWorkerPool as TypedWorkerPool<T>;
 }

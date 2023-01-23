@@ -1,10 +1,14 @@
-export type WebWorkerMessage = IdleMessage | TaskResultMessage<any>;
+export type WebWorkerMessage =
+  | StartedMessage
+  | IdleMessage
+  | TaskResultMessage<any>;
 
 export interface StartedMessage {
   type: "STARTED";
-  setup: {
-    availableTaskNames: string[];
-  };
+}
+
+export interface IdleMessage {
+  type: "IDLE";
 }
 
 export interface TaskResultMessage<Output> {

@@ -12,12 +12,9 @@ export class InternalWorkerThread {
   private readonly webWorker: Worker;
 
   private status: Status = "starting";
-  private startedCompletable: CompletablePromise<StartedMessage["setup"]> =
-    new CompletablePromise<
-      StartedMessage["setup"]
-    >();
-
-  protected _availableTaskNames: string[] = [];
+  private startedCompletable: CompletablePromise<void> = new CompletablePromise<
+    void
+  >();
 
   private currentTask: Task<any, any> | null = null;
 
@@ -34,7 +31,7 @@ export class InternalWorkerThread {
 
       switch (message.type) {
         case "STARTED":
-          this.startedCompletable.complete(message.setup);
+          this.startedCompletable.complete();
         case "IDLE":
           this.status = "idling";
           this.runNextTask();
@@ -66,9 +63,8 @@ export class InternalWorkerThread {
     this.webWorker.postMessage(msg);
   }
 
-  async internalStarted(): Promise<string[]> {
-    const { availableTaskNames } = await this.startedCompletable.promise;
-    return availableTaskNames;
+  async internalStarted(): Promise<void> {
+    await this.startedCompletable.promise;
   }
 
   async internalCompleted(waitForEmptyQueue: boolean): Promise<void> {
@@ -87,9 +83,5 @@ export class InternalWorkerThread {
     }
 
     this.webWorker.terminate();
-  }
-
-  get availableTaskNames(): string[] {
-    return this._availableTaskNames.slice();
   }
 }

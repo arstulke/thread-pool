@@ -1,8 +1,8 @@
-import { StartedMessage } from "./types";
 import {
   MainThreadMessage,
   RunTaskMessage,
   TaskResultMessage,
+  WebWorkerMessage,
 } from "./types.ts";
 import { CompletablePromise } from "./util/CompletablePromise.ts";
 
@@ -22,6 +22,10 @@ export function exposeMultipleFunctions(
   let currentAbortCompletable: CompletablePromise<void> =
     new CompletablePromise<void>();
 
+  function sendMessage(msg: WebWorkerMessage): void {
+    self.postMessage(msg);
+  }
+
   self.onmessage = async (event: MessageEvent<MainThreadMessage>) => {
     const { data: message } = event;
 
@@ -35,18 +39,14 @@ export function exposeMultipleFunctions(
           abortCompletable.promise,
         ]);
         if (resultMessage) {
-          self.postMessage(resultMessage);
+          sendMessage(resultMessage);
         }
-        self.postMessage({ type: "IDLE" });
+        sendMessage({ type: "IDLE" });
         break;
     }
   };
 
-  const startedMessage: StartedMessage = {
-    type: "STARTED",
-    setup: { availableTaskNames: Object.keys(fnObj) },
-  };
-  self.postMessage(startedMessage);
+  sendMessage({ type: "STARTED" });
 }
 
 async function runTask(
