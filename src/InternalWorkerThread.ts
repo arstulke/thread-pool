@@ -1,17 +1,17 @@
-import { Task } from "./util/Task.ts";
+import { RunTaskMessage, WebWorkerMessage } from "./types.ts";
 import {
   BlockingQueue,
   BlockingQueueClosedError,
 } from "./util/BlockingQueue.ts";
 import { CompletablePromise } from "./util/CompletablePromise.ts";
-import { RunTaskMessage, StartedMessage, WebWorkerMessage } from "./types.ts";
+import { Task } from "./util/Task.ts";
 
-type Status = "starting" | "idling" | "working";
+type Status = "starting" | "idling" | "working" | "terminating" | "terminated";
 
 export class InternalWorkerThread {
   private readonly webWorker: Worker;
 
-  private status: Status = "starting";
+  private _status: Status = "starting";
   private startedCompletable: CompletablePromise<void> = new CompletablePromise<
     void
   >();
@@ -32,8 +32,11 @@ export class InternalWorkerThread {
       switch (message.type) {
         case "STARTED":
           this.startedCompletable.complete();
+          this._status = "idling";
+          this.runNextTask();
+          break;
         case "IDLE":
-          this.status = "idling";
+          this._status = "idling";
           this.runNextTask();
           break;
 
@@ -45,6 +48,11 @@ export class InternalWorkerThread {
   }
 
   private async runNextTask(): Promise<void> {
+    await this.taskQueue.awaitResume();
+    if (this.isTerminating || this.isTerminated) {
+      return;
+    }
+
     let task: Task<any, any>;
     try {
       task = await this.taskQueue.pull();
@@ -56,7 +64,7 @@ export class InternalWorkerThread {
     }
 
     this.currentTask = task;
-    this.status = "working";
+    this._status = "working";
 
     const { taskName, taskInput } = task;
     const msg: RunTaskMessage<any> = { type: "RUN_TASK", taskName, taskInput };
@@ -78,10 +86,36 @@ export class InternalWorkerThread {
     waitForEmptyQueue: boolean,
     gracefully: boolean = true,
   ): Promise<void> {
+    this._status = "terminating";
     if (gracefully) {
       await this.internalCompleted(waitForEmptyQueue);
     }
 
     this.webWorker.terminate();
+    this._status = "terminated";
+  }
+
+  get isStarting(): boolean {
+    return this._status === "starting";
+  }
+
+  get isIdling(): boolean {
+    return this._status === "idling";
+  }
+
+  get isWorking(): boolean {
+    return this._status === "working";
+  }
+
+  get isTerminating(): boolean {
+    return this._status === "terminating";
+  }
+
+  get isTerminated(): boolean {
+    return this._status === "terminated";
+  }
+
+  get isRunning(): boolean {
+    return this.isStarting || this.isIdling || this.isWorking;
   }
 }

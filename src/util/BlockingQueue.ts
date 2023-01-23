@@ -14,17 +14,54 @@ export class BlockingQueue<Value> {
     void
   >();
 
+  private isPaused: boolean;
+  private resumeCompletable: CompletablePromise<void> = new CompletablePromise<
+    void
+  >();
+
   constructor() {
+    this.resumeCompletable.complete();
   }
 
-  push(value: Value) {
+  pause(): void {
+    this.isPaused = true;
+    if (this.resumeCompletable.isResolved) {
+      this.resumeCompletable = new CompletablePromise<void>();
+    }
+  }
+
+  resume(): void {
+    const valueCountToAssign = Math.min(
+      this.waitingValueBuffer.length,
+      this.pullingCompletablePromiseBuffer.length,
+    );
+
+    for (let i = 0; i < valueCountToAssign; i++) {
+      const value = this.waitingValueBuffer.shift()!;
+      const completable = this.pullingCompletablePromiseBuffer.shift();
+      completable.complete(value);
+    }
+
+    if (this.isEmpty) {
+      this.emptyCompletable.complete();
+    }
+
+    this.isPaused = false;
+    this.resumeCompletable.complete();
+  }
+
+  awaitResume(): Promise<void> {
+    return this.resumeCompletable.promise;
+  }
+
+  push(value: Value): void {
     if (this.isClosing) {
       throw new BlockingQueueClosedError(
         "BlockingQueue is closed, cannot push more values",
       );
     }
 
-    if (this.pullingCompletablePromiseBuffer.length === 0) { // if not promises are queued
+    if (this.pullingCompletablePromiseBuffer.length === 0 || this.isPaused) { // if no promises are queued or queue is paused
       this.waitingValueBuffer.push(value); // queue the value
       return;
     }
@@ -34,7 +71,7 @@ export class BlockingQueue<Value> {
   }
 
   async pull(): Promise<Value> {
-    if (this.isEmpty) {
+    if (this.isEmpty || this.isPaused) {
       const completablePromise = new CompletablePromise<Value>();
       this.pullingCompletablePromiseBuffer.push(completablePromise);
       return completablePromise.promise;
