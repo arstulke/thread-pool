@@ -9,8 +9,8 @@ import { CompletablePromise } from "./util/CompletablePromise.ts";
 type WorkerTaskFunction<In = any, Out = any> = (input: In) => Promise<Out>;
 type WorkerTaskObject = { [key: string]: WorkerTaskFunction<any, any> };
 
-export function exposeSingleFunction(
-  fn: WorkerTaskFunction<any, any>,
+export function exposeSingleFunction<In, Out>(
+  fn: WorkerTaskFunction<In, Out>,
   name: string = "default",
 ) {
   exposeMultipleFunctions({ [name]: fn });

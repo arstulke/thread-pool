@@ -24,3 +24,5 @@ export interface RunTaskMessage<Input> {
   taskName: string;
   taskInput: Input;
 }
+
+export type WorkerConstructor = new () => Worker;

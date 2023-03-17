@@ -1,4 +1,4 @@
-import { RunTaskMessage, WebWorkerMessage } from "./types.ts";
+import { RunTaskMessage, WebWorkerMessage, WorkerConstructor } from "./types.ts";
 import {
   BlockingQueue,
   BlockingQueueClosedError,
@@ -7,7 +7,6 @@ import { CompletablePromise } from "./util/CompletablePromise.ts";
 import { Task } from "./util/Task.ts";
 
 type Status = "starting" | "idling" | "working" | "terminating" | "terminated";
-export type WorkerConstructor = new () => Worker;
 
 export class InternalWorkerThread {
   private readonly webWorker: Worker;
