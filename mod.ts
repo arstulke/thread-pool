@@ -1,4 +1,4 @@
-export { WorkerConstructor } from "./src/types.ts";
+export type { WorkerConstructor } from "./src/types.ts";
 
 export * from "./src/WorkerThread.ts";
 export * from "./src/WorkerPool.ts";
