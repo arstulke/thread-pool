@@ -1,7 +1,13 @@
 import { WorkerThread } from "../../mod.ts";
 import { log, sleep } from "../utils.ts";
 
-const thread = await new WorkerThread(new URL("./worker.ts", import.meta.url))
+class CustomWorker extends Worker {
+  constructor() {
+    super(new URL("./worker.ts", import.meta.url), { type: "module" });
+  }
+}
+
+const thread = await new WorkerThread(CustomWorker)
   .started();
 
 const taskPromise = thread.run("simulateWork", {

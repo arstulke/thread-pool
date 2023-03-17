@@ -1,4 +1,4 @@
-import { InternalWorkerThread } from "./InternalWorkerThread.ts";
+import { InternalWorkerThread, WorkerConstructor } from "./InternalWorkerThread.ts";
 import { BlockingQueue } from "./util/BlockingQueue.ts";
 import { Task } from "./util/Task.ts";
 
@@ -11,9 +11,9 @@ interface IWorkerThread {
 
 export class WorkerThread extends InternalWorkerThread
   implements IWorkerThread {
-  constructor(workerScriptURL: URL) {
+  constructor(workerConstructor: WorkerConstructor) {
     const taskQueue = new BlockingQueue<Task<any, any>>();
-    super(workerScriptURL, taskQueue);
+    super(workerConstructor, taskQueue);
   }
 
   run<In, Out>(taskName: string, input: In): Promise<Out> {

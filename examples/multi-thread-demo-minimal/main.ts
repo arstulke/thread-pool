@@ -1,7 +1,13 @@
 import { WorkerPool } from "../../mod.ts";
 import { sleep } from "../utils.ts";
 
-const pool = await new WorkerPool(new URL("./worker.ts", import.meta.url))
+class CustomWorker extends Worker {
+  constructor() {
+    super(new URL("./worker.ts", import.meta.url), { type: "module" });
+  }
+}
+
+const pool = await new WorkerPool(CustomWorker)
   .started();
 await pool.scaleTo(2);
 

@@ -1,6 +1,6 @@
 import { Task } from "./util/Task.ts";
 import { BlockingQueue } from "./util/BlockingQueue.ts";
-import { InternalWorkerThread } from "./InternalWorkerThread.ts";
+import { InternalWorkerThread, WorkerConstructor } from "./InternalWorkerThread.ts";
 import { raceX } from "./util/PromiseUtil.ts";
 
 interface IWorkerPool {
@@ -15,7 +15,7 @@ export class WorkerPool implements IWorkerPool {
   private readonly workerThreads: InternalWorkerThread[] = [];
   private readonly taskQueue = new BlockingQueue<Task<any, any>>();
 
-  constructor(private readonly workerScriptURL: URL) {
+  constructor(private readonly workerConstructor: WorkerConstructor) {
   }
 
   async scaleTo(targetSize: number): Promise<this> {
@@ -36,7 +36,7 @@ export class WorkerPool implements IWorkerPool {
     const startedPromises: Promise<void>[] = [];
     for (let i = oldSize; i < targetSize; i++) {
       const workerThread = new InternalWorkerThread(
-        this.workerScriptURL,
+        this.workerConstructor,
         this.taskQueue,
       );
       this.workerThreads.push(workerThread);

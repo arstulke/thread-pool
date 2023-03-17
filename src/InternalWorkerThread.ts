@@ -7,6 +7,7 @@ import { CompletablePromise } from "./util/CompletablePromise.ts";
 import { Task } from "./util/Task.ts";
 
 type Status = "starting" | "idling" | "working" | "terminating" | "terminated";
+export type WorkerConstructor = new () => Worker;
 
 export class InternalWorkerThread {
   private readonly webWorker: Worker;
@@ -19,10 +20,10 @@ export class InternalWorkerThread {
   private currentTask: Task<any, any> | null = null;
 
   constructor(
-    workerScriptURL: URL,
+    workerConstructor: WorkerConstructor,
     protected readonly taskQueue: BlockingQueue<Task<any, any>>,
   ) {
-    this.webWorker = new Worker(workerScriptURL.href, { type: "module" });
+    this.webWorker = new workerConstructor();
 
     this.webWorker.onmessage = async (
       event: MessageEvent<WebWorkerMessage>,
