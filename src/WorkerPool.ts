@@ -23,10 +23,12 @@ export class WorkerPool implements IWorkerPool {
     console.log(`Scaling from ${oldSize} to ${targetSize}...`);
     if (oldSize < targetSize) {
       await this.scaleUp(oldSize, targetSize);
-      console.log(`Scaled up`);
+      console.log(`Scaled up to ${targetSize}`);
     } else if (oldSize > targetSize) {
       await this.scaleDown(oldSize, targetSize);
-      console.log(`Scaled down`);
+      console.log(`Scaled down to ${targetSize}`);
+    } else {
+      console.log(`Scaled already to ${targetSize}. No action required`);
     }
 
     return this;
