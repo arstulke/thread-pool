@@ -23,8 +23,7 @@ export class WorkerThread extends InternalWorkerThread
     const taskQueue = new BlockingQueue<Task<any, any>>({
       maxWaitingValues: options?.maxWaitingValues,
       deleteWaitingValueAction: options?.deleteWaitingValueAction,
-      onDeletedWaitingValue: (task: Task<any, any>) =>
-        task.throw(new Error("Task was deleted from waiting queue")),
+      onDeletedWaitingValue: (task: Task<any, any>) => task.cancelWaiting(),
     });
     super(workerConstructor, taskQueue);
   }
