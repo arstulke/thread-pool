@@ -3,6 +3,12 @@ import { CompletablePromise } from "./CompletablePromise.ts";
 export class BlockingQueueClosedError extends Error {
 }
 
+export interface BlockingQueueOptions<Value> {
+  maxWaitingValues?: number; // if less than 1 the capcity is infinite
+  deleteWaitingValueAction?: "first" | "last"; // delete first or last value when reaching capacity limit
+  onDeletedWaitingValue?: (deletedWaitingValue: Value) => void;
+}
+
 export class BlockingQueue<Value> {
   private readonly pullingCompletablePromiseBuffer: CompletablePromise<
     Value
@@ -19,7 +25,16 @@ export class BlockingQueue<Value> {
     void
   >();
 
-  constructor() {
+  private readonly maxWaitingValues: number;
+  private readonly deleteWaitingValueAction: "first" | "last";
+  private readonly onDeletedWaitingValue: (deletedWaitingValue: Value) => void;
+
+  constructor(options?: BlockingQueueOptions<Value>) {
+    this.maxWaitingValues = options?.maxWaitingValues ?? 0;
+    this.deleteWaitingValueAction = options?.deleteWaitingValueAction ??
+      "first";
+    this.onDeletedWaitingValue = options?.onDeletedWaitingValue ?? (() => null);
+
     this.resumeCompletable.complete();
   }
 
@@ -62,7 +77,19 @@ export class BlockingQueue<Value> {
     }
 
     if (this.pullingCompletablePromiseBuffer.length === 0 || this.isPaused) { // if no promises are queued or queue is paused
-      this.waitingValueBuffer.push(value); // queue the value
+      if (
+        this.maxWaitingValues > 0 &&
+        this.waitingValueBuffer.length >= this.maxWaitingValues
+      ) {
+        if (this.deleteWaitingValueAction === "first") {
+          const deletedWaiting = this.waitingValueBuffer.shift()!; // remove the first element
+          this.onDeletedWaitingValue(deletedWaiting);
+        } else {
+          const deletedWaiting = this.waitingValueBuffer.pop()!; // remove the first element
+          this.onDeletedWaitingValue(deletedWaiting);
+        }
+      }
+      this.waitingValueBuffer.push(value); // queue the new value
       return;
     }
 

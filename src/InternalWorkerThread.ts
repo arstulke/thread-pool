@@ -1,4 +1,8 @@
-import { RunTaskMessage, WebWorkerMessage, WorkerConstructor } from "./types.ts";
+import {
+  RunTaskMessage,
+  WebWorkerMessage,
+  WorkerConstructor,
+} from "./types.ts";
 import {
   BlockingQueue,
   BlockingQueueClosedError,

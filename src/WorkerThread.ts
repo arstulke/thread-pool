@@ -1,5 +1,8 @@
-import { InternalWorkerThread, WorkerConstructor } from "./InternalWorkerThread.ts";
-import { BlockingQueue } from "./util/BlockingQueue.ts";
+import {
+  InternalWorkerThread,
+  WorkerConstructor,
+} from "./InternalWorkerThread.ts";
+import { BlockingQueue, BlockingQueueOptions } from "./util/BlockingQueue.ts";
 import { Task } from "./util/Task.ts";
 
 interface IWorkerThread {
@@ -9,10 +12,20 @@ interface IWorkerThread {
   terminate(gracefully?: boolean): Promise<void>;
 }
 
+export interface WorkerThreadOptions extends BlockingQueueOptions {}
+
 export class WorkerThread extends InternalWorkerThread
   implements IWorkerThread {
-  constructor(workerConstructor: WorkerConstructor) {
-    const taskQueue = new BlockingQueue<Task<any, any>>();
+  constructor(
+    workerConstructor: WorkerConstructor,
+    options?: WorkerThreadOptions,
+  ) {
+    const taskQueue = new BlockingQueue<Task<any, any>>({
+      maxWaitingValues: options?.maxWaitingValues,
+      deleteWaitingValueAction: options?.deleteWaitingValueAction,
+      onDeletedWaitingValue: (task: Task<any, any>) =>
+        task.throw(new Error("Task was deleted from waiting queue")),
+    });
     super(workerConstructor, taskQueue);
   }
 

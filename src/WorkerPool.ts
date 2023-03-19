@@ -1,6 +1,9 @@
 import { Task } from "./util/Task.ts";
-import { BlockingQueue } from "./util/BlockingQueue.ts";
-import { InternalWorkerThread, WorkerConstructor } from "./InternalWorkerThread.ts";
+import { BlockingQueue, BlockingQueueOptions } from "./util/BlockingQueue.ts";
+import {
+  InternalWorkerThread,
+  WorkerConstructor,
+} from "./InternalWorkerThread.ts";
 import { raceX } from "./util/PromiseUtil.ts";
 
 interface IWorkerPool {
@@ -11,11 +14,22 @@ interface IWorkerPool {
   terminate(gracefully?: boolean): Promise<void>;
 }
 
+export interface WorkerPoolOptions extends BlockingQueueOptions {}
+
 export class WorkerPool implements IWorkerPool {
   private readonly workerThreads: InternalWorkerThread[] = [];
-  private readonly taskQueue = new BlockingQueue<Task<any, any>>();
+  private readonly taskQueue: BlockingQueue<Task<any, any>>;
 
-  constructor(private readonly workerConstructor: WorkerConstructor) {
+  constructor(
+    private readonly workerConstructor: WorkerConstructor,
+    options?: WorkerPoolOptions,
+  ) {
+    this.taskQueue = new BlockingQueue<Task<any, any>>({
+      maxWaitingValues: options?.maxWaitingValues,
+      deleteWaitingValueAction: options?.deleteWaitingValueAction,
+      onDeletedWaitingValue: (task: Task<any, any>) =>
+        task.throw(new Error("Task was deleted from waiting queue")),
+    });
   }
 
   async scaleTo(targetSize: number): Promise<this> {
